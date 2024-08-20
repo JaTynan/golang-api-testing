@@ -90,7 +90,7 @@ func main() {
 	currentFileName := apiCredentialFileName + "unleashed.txt"
 	apiCredentialsFound := FileListByDirectorySearch(currentFileName)
 
-	if apiCredentialsFound == true {
+	if apiCredentialsFound {
 		fmt.Println("We found the API credential file: ", currentFileName)
 	} else {
 		fmt.Println("No found API credential file called: ", currentFileName)
@@ -117,7 +117,7 @@ func main() {
 		_ = scanner.Text()
 		currentLine := scanner.Text()
 		currentLinePrefix, currentLineSuffix, currentLineDividerFound := strings.Cut(currentLine, ":")
-		if currentLineDividerFound == true {
+		if currentLineDividerFound {
 			fmt.Printf("%v: %v\n", currentLinePrefix, currentLineSuffix)
 			if currentLinePrefix == "ID" {
 				unleashedAPIID = currentLineSuffix
@@ -153,6 +153,8 @@ func main() {
 	signatureMessage := unleashedWebsiteParameters
 	// Adding custom headers for Unleashed API
 	// for Content-Type and Accept we can use application/xml or application/json
+	// Unleashed returns JSON in unicode
+	// Unleashed return XML as utf-8
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("api-auth-id", unleashedAPIID)
@@ -184,7 +186,7 @@ func main() {
 	}
 	fmt.Println("Response Status:", response.Status)
 	fmt.Println("Response Headers:", response.Header)
-	//fmt.Println("Raw response body:", string(responseBodyContent))
+	fmt.Println("Raw response body:", string(responseBodyContent))
 
 	// Unmarshal the JSON response into a go structure
 	var responseBodyresult map[string]interface{}
@@ -197,8 +199,22 @@ func main() {
 		fmt.Printf("\n %s:%v\n", key, value)
 	}
 
-	// request Customer extract json file from Unleashed.
-	// display Customer extract from json file.
+	// Save the API JSON response as a json file.
+	// we want to do this to keep track of what we have requested.
+	// we may want to keep a list of requests, time date and response if one was returned.
+	// to save on API requests.
+	err = os.WriteFile("response.json", responseBodyContent, 0644)
+	if err != nil {
+		log.Fatalf("\nFailed to save the response into a file: %v", err)
+	}
+	fmt.Println("Successfully created the file.")
+
+	// load the content then display Customer extract from json file.
+	responseFileData, err := os.ReadFile("response.json")
+	if err != nil {
+		log.Fatalf("\nFailed to load the response file: %v", err)
+	}
+	fmt.Println("Successfully loaded the file.")
 
 	// connect to PostgreSQL database.
 	// enter new row into customer table.
